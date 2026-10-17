@@ -1,0 +1,13 @@
+distance_km,speed_kmh,traffic_label,illustrative_reference_minutes,data_note
+0.5,35,Low,2,Synthetic example only; replace with measured GPS/travel-time data for evaluation
+0.8,20,Medium,4,Synthetic example only; replace with measured GPS/travel-time data for evaluation
+1.5,10,High,12,Synthetic example only; replace with measured GPS/travel-time data for evaluation
+2.0,30,Low,4,Synthetic example only; replace with measured GPS/travel-time data for evaluation
+2.0,18,Medium,7,Synthetic example only; replace with measured GPS/travel-time data for evaluation
+2.0,9,High,14,Synthetic example only; replace with measured GPS/travel-time data for evaluation
+4.0,32,Low,8,Synthetic example only; replace with measured GPS/travel-time data for evaluation
+4.0,20,Medium,13,Synthetic example only; replace with measured GPS/travel-time data for evaluation
+4.0,10,High,24,Synthetic example only; replace with measured GPS/travel-time data for evaluation
+7.0,38,Low,12,Synthetic example only; replace with measured GPS/travel-time data for evaluation
+7.0,22,Medium,20,Synthetic example only; replace with measured GPS/travel-time data for evaluation
+7.0,12,High,35,Synthetic example only; replace with measured GPS/travel-time data for evaluation

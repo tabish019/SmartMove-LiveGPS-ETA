@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>SmartMove Admin</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+</head>
+
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="side-brand"><i>⌁</i><span>SmartMove</span></div>
+    <div class="nav-label">CONTROL CENTER</div>
+
+    <div class="nav">
+      <a class="active" data-section="overview">◉ <span>Overview</span></a>
+      <a data-section="tracking">⌁ <span>Live Tracking</span></a>
+      <a data-section="passengers">♙ <span>Passengers</span></a>
+      <a data-section="addstudent">＋ <span>Add Student</span></a>
+      <a data-section="routes">↝ <span>Routes & Stops</span></a>
+      <a data-section="safety">⚠ <span>Safety</span></a>
+      <a data-section="reports">▦ <span>Reports</span></a>
+    </div>
+
+    <div class="sidebar-bottom">
+      <div class="user-mini">
+        <b>Administrator</b>Fleet Control
+      </div>
+      <a class="logout" href="/logout">↪ Sign out</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <h1 class="page-title" id="pageTitle">Operations Overview</h1>
+        <div class="sub">Live transport intelligence · Wednesday, 07 October 2026</div>
+      </div>
+      <div class="top-actions">
+        <span class="live-pill">● ALL SYSTEMS LIVE</span>
+        <div class="avatar">AD</div>
+      </div>
+    </div>
+
+    <!-- OVERVIEW -->
+    <section id="overview" class="page-section active-section">
+      <div class="grid4">
+        <div class="stat">
+          <div class="iconbox">⌁</div>
+          <div class="label">ACTIVE BUSES</div>
+          <div class="value" id="busCount">2</div>
+          <div class="trend">↑ GPS connected</div>
+        </div>
+        <div class="stat">
+          <div class="iconbox">♙</div>
+          <div class="label">PASSENGERS</div>
+          <div class="value" id="studentCount">30</div>
+          <div class="trend">30 registered</div>
+        </div>
+        <div class="stat">
+          <div class="iconbox">✓</div>
+          <div class="label">EXPECTED TODAY</div>
+          <div class="value" id="expected">30</div>
+          <div class="trend">Attendance monitored</div>
+        </div>
+        <div class="stat">
+          <div class="iconbox">⚠</div>
+          <div class="label">ATTENTION NEEDED</div>
+          <div class="value" id="attention">0</div>
+          <div class="trend orange-text">Missing / delayed</div>
+        </div>
+      </div>
+
+      <div class="content-grid">
+        <section class="panel">
+          <div class="panel-head">
+            <div class="panel-title">Live Fleet Map</div>
+            <button class="primary-small" onclick="load()">↻ Refresh map</button>
+          </div>
+          <div class="map-wrap">
+            <div id="map" class="map"></div>
+            <div class="map-overlay">● Live GPS · updates every 5 sec</div>
+            <div class="map-legend">🚌 Bus · 📍 Pickup zones · — Route corridor</div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <div class="panel-title">Fleet Status</div>
+            <a href="#" onclick="go('tracking');return false">View all</a>
+          </div>
+          <div id="buses" class="bus-list"></div>
+          <div class="panel-head" style="margin-top:22px">
+            <div class="panel-title">Recent Alerts</div>
+          </div>
+          <div id="alerts"></div>
+        </section>
+      </div>
+    </section>
+
+    <!-- LIVE TRACKING -->
+    <section id="tracking" class="page-section">
+      <div class="section-head">
+        <div>
+          <h2>Fleet Tracking Map</h2>
+          <p>Monitor every active vehicle, speed and ETA in real time.</p>
+        </div>
+        <button class="primary-small" onclick="load()">↻ Refresh map</button>
+      </div>
+
+      <div class="content-grid">
+        <section class="panel">
+          <div id="map2" class="map large-map"></div>
+        </section>
+        <section class="panel">
+          <div class="panel-title">Active Fleet</div>
+          <div id="trackingCards" class="fleet-cards"></div>
+        </section>
+      </div>
+    </section>
+
+    <!-- PASSENGER MANAGEMENT -->
+    <section id="passengers" class="page-section">
+      <div class="section-head">
+        <div>
+          <h2>Passenger Details</h2>
+          <p>All registered students, pickup points, routes and attendance status.</p>
+        </div>
+        <button class="action-btn" onclick="load()">↻ Refresh</button>
+      </div>
+
+      <section class="panel">
+        <div class="search-row">
+          <input id="studentSearch"
+                 placeholder="Search student, ID, pickup or route..."
+                 oninput="renderStudents()">
+
+          <select id="statusFilter" onchange="renderStudents()">
+            <option value="all">All statuses</option>
+            <option>Expected</option>
+            <option>Boarded</option>
+            <option>Not Coming</option>
+          </select>
+        </div>
+
+        <div style="overflow:auto">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>PASSENGER</th>
+                <th>PHONE</th>
+                <th>PICKUP</th>
+                <th>ROUTE</th>
+                <th>STATUS</th>
+                <th>ACTION</th>
+              </tr>
+            </thead>
+            <tbody id="students"></tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+
+    <!-- ADD STUDENT -->
+    <section id="addstudent" class="page-section">
+      <div class="section-head">
+        <div>
+          <h2>Student Registration</h2>
+          <p>Register a new student and add them to the student login list.</p>
+        </div>
+      </div>
+
+      <section class="panel">
+        <form id="addStudentForm" class="student-form">
+          <div class="form-grid">
+            <div>
+              <label for="newName">Full name *</label>
+              <input id="newName" name="name" required maxlength="100"
+                     placeholder="Enter student name">
+            </div>
+
+            <div>
+              <label for="newPhone">Phone number</label>
+              <input id="newPhone" name="phone" maxlength="30"
+                     placeholder="Enter phone number">
+            </div>
+
+            <div>
+              <label for="newPickup">Pickup point *</label>
+              <input id="newPickup" name="pickup" required maxlength="120"
+                     placeholder="e.g. Dharampeth">
+            </div>
+
+            <div>
+              <label for="newRoute">Assigned route *</label>
+              <select id="newRoute" name="route">
+                <option>Route A</option>
+                <option>Route B</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="newLat">Pickup latitude (optional)</label>
+              <input id="newLat" name="lat" type="number" step="any"
+                     placeholder="e.g. 21.1467">
+            </div>
+
+            <div>
+              <label for="newLng">Pickup longitude (optional)</label>
+              <input id="newLng" name="lng" type="number" step="any"
+                     placeholder="e.g. 79.0882">
+            </div>
+          </div>
+
+          <button class="primary-small" type="submit">＋ Save Student</button>
+          <span id="addStudentMessage" class="form-message" role="status"></span>
+        </form>
+      </section>
+    </section>
+
+    <!-- ROUTES AND STOPS -->
+    <section id="routes" class="page-section">
+      <div class="section-head">
+        <div>
+          <h2>Route Overview</h2>
+          <p>Assigned pickup zones for the two active routes.</p>
+        </div>
+      </div>
+
+      <div class="route-grid">
+        <section class="panel">
+          <div class="panel-title">Route A · ST-01</div>
+          <p class="sub">Driver: Rajesh Patil · Campus destination</p>
+          <div id="routeA"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title">Route B · ST-02</div>
+          <p class="sub">Driver: Suresh More · Campus destination</p>
+          <div id="routeB"></div>
+        </section>
+      </div>
+    </section>
+
+    <!-- SAFETY -->
+    <section id="safety" class="page-section">
+      <div class="section-head">
+        <div>
+          <h2>Safety Monitoring</h2>
+          <p>Operational events, missing passengers and vehicle monitoring.</p>
+        </div>
+      </div>
+
+      <div class="grid4">
+        <div class="stat">
+          <div class="label">SOS EVENTS</div>
+          <div class="value">0</div>
+          <div class="trend">No active emergency</div>
+        </div>
+        <div class="stat">
+          <div class="label">ROUTE DEVIATIONS</div>
+          <div class="value">0</div>
+          <div class="trend">Routes on corridor</div>
+        </div>
+        <div class="stat">
+          <div class="label">GEOFENCE</div>
+          <div class="value">2/2</div>
+          <div class="trend">Vehicles monitored</div>
+        </div>
+        <div class="stat">
+          <div class="label">ATTENDANCE ALERTS</div>
+          <div class="value" id="safetyAttention">0</div>
+          <div class="trend orange-text">Requires review</div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:18px">
+        <div class="panel-head">
+          <div class="panel-title">Safety Event Feed</div>
+        </div>
+        <div id="safetyFeed"></div>
+      </div>
+    </section>
+
+    <!-- REPORTS -->
+    <section id="reports" class="page-section">
+      <div class="section-head">
+        <div>
+          <h2>Report Summary</h2>
+          <p>Quick operational summary for today's transport run.</p>
+        </div>
+        <button class="primary-small" onclick="window.print()">Print / Save PDF</button>
+      </div>
+
+      <div class="content-grid">
+        <section class="panel">
+          <div class="panel-title">Attendance Summary</div>
+          <div id="reportStats" class="report-stats"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title">Activity Log</div>
+          <div id="activity"></div>
+        </section>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+let data = {
+  students: [],
+  buses: [],
+  notifications: [],
+  trips: []
+};
+
+let map, markers = {}, map2, markers2 = {};
+
+const titles = {
+  overview: 'Operations Overview',
+  tracking: 'Live Tracking',
+  passengers: 'Passenger Management',
+  addstudent: 'Add Student',
+  routes: 'Routes & Stops',
+  safety: 'Safety & Alerts',
+  reports: 'Reports'
+};
+
+function initMap(id) {
+  const m = L.map(id).setView([21.137, 79.078], 12.8);
+
+  L.tileLayer(
+    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    {
+      attribution: '© OpenStreetMap contributors',
+      maxZoom: 19
+    }
+  ).addTo(m);
+
+  return m;
+}
+
+function go(id) {
+  document.querySelectorAll('.nav a').forEach(a => {
+    a.classList.toggle('active', a.dataset.section === id);
+  });
+
+  document.querySelectorAll('.page-section').forEach(s => {
+    s.classList.toggle('active-section', s.id === id);
+  });
+
+  document.getElementById('pageTitle').textContent = titles[id];
+
+  if (id === 'tracking' && map2) {
+    setTimeout(() => map2.invalidateSize(), 100);
+  }
+}
+
+document.querySelectorAll('.nav a').forEach(a => {
+  a.addEventListener('click', () => go(a.dataset.section));
+});
+
+function busMarkers(m, store) {
+  data.buses.forEach(b => {
+    if (!store[b.id]) {
+      store[b.id] = L.marker([b.lat, b.lng])
+        .addTo(m)
+        .bindPopup(
+          `<b>${b.number}</b><br>
+           ${b.driver}<br>
+           ${b.route}<br>
+           ${b.speed.toFixed(0)} km/h · ${b.eta} min ETA`
+        );
+    } else {
+      store[b.id].setLatLng([b.lat, b.lng]);
+    }
+  });
+}
+
+function renderStudents() {
+  const q = (
+    document.getElementById('studentSearch')?.value || ''
+  ).toLowerCase();
+
+  const f = document.getElementById('statusFilter')?.value || 'all';
+
+  const rows = data.students.filter(s =>
+    (f === 'all' || s.status === f) &&
+    (`${s.id} ${s.name} ${s.pickup} ${s.route}`.toLowerCase().includes(q))
+  );
+
+  document.getElementById('students').innerHTML = rows.map(s => `
+    <tr>
+      <td><b>STU-${String(s.id).padStart(3, '0')}</b></td>
+      <td><b>${s.name}</b></td>
+      <td>${s.phone}</td>
+      <td>${s.pickup}</td>
+      <td>${s.route}</td>
+      <td>
+        <span class="badge ${
+          s.status === 'Not Coming' ? 'red' :
+          s.status === 'Boarded' ? 'green' : 'orange'
+        }">${s.status}</span>
+      </td>
+      <td><button class="action-btn" onclick="remind(${s.id})">Notify</button></td>
+    </tr>
+  `).join('');
+}
+
+function renderRoutes() {
+  const groups = {};
+
+  data.students.forEach(s => {
+    (groups[s.route] ??= []).push(s);
+  });
+
+  for (const r of ['Route A', 'Route B']) {
+    document.getElementById(
+      r === 'Route A' ? 'routeA' : 'routeB'
+    ).innerHTML = (groups[r] || []).map(s => `
+      <div class="route-stop">
+        <i class="stop-dot"></i>
+        <div>
+          <b>${s.pickup}</b>
+          <small>${s.name} · STU-${String(s.id).padStart(3, '0')} · ${s.status}</small>
+        </div>
+      </div>
+    `).join('') + `
+      <div class="route-stop">
+        <i class="stop-dot final"></i>
+        <div>
+          <b>College Gate</b>
+          <small>Final destination</small>
+        </div>
+      </div>
+    `;
+  }
+}
+
+function load() {
+  fetch('/api/dashboard')
+    .then(r => r.json())
+    .then(d => {
+      data = d;
+
+      document.getElementById('busCount').textContent = d.buses.length;
+      document.getElementById('studentCount').textContent = d.students.length;
+
+      document.getElementById('expected').textContent =
+        d.students.filter(x => x.status === 'Expected').length;
+
+      document.getElementById('attention').textContent =
+        d.students.filter(x => x.status === 'Not Coming').length;
+
+      document.getElementById('safetyAttention').textContent =
+        d.students.filter(x => x.status === 'Not Coming').length;
+
+      document.getElementById('buses').innerHTML = d.buses.map(b => `
+        <div class="bus-row">
+          <span class="bus-dot"></span>
+          <div class="bus-info">
+            <b>${b.number} · ${b.driver}</b>
+            <small>${b.route} · ${b.speed.toFixed(0)} km/h</small>
+          </div>
+          <div class="bus-eta">
+            <b>${b.eta} min</b>
+            <small>ETA campus</small>
+          </div>
+        </div>
+      `).join('');
+
+      document.getElementById('trackingCards').innerHTML = d.buses.map(b => `
+        <div class="fleet-card">
+          <div>
+            <b>${b.number}</b>
+            <small>${b.driver} · ${b.route}</small>
+          </div>
+          <strong>${b.speed.toFixed(0)} km/h</strong>
+          <span>${b.eta} min ETA</span>
+        </div>
+      `).join('');
+
+      document.getElementById('alerts').innerHTML =
+        d.notifications.length
+          ? d.notifications.slice(0, 5).map(n => `
+              <div class="alert">
+                <div class="alert-icon">⚠</div>
+                <div>
+                  <b>${n.title}</b>
+                  <p>${n.body}<span class="small-time">${n.created_at}</span></p>
+                </div>
+              </div>
+            `).join('')
+          : '<div class="sub">No recent alerts.</div>';
+
+      document.getElementById('safetyFeed').innerHTML =
+        d.notifications.length
+          ? d.notifications.map(n => `
+              <div class="alert">
+                <div class="alert-icon">⚠</div>
+                <div>
+                  <b>${n.title}</b>
+                  <p>${n.body}<span class="small-time">${n.created_at}</span></p>
+                </div>
+              </div>
+            `).join('')
+          : '<div class="sub">No safety events recorded.</div>';
+
+      document.getElementById('activity').innerHTML =
+        d.trips.slice(0, 10).map(t => `
+          <div class="alert">
+            <div class="alert-icon">↝</div>
+            <div>
+              <b>${t.event}</b>
+              <p>${t.detail}<span class="small-time">${t.created_at}</span></p>
+            </div>
+          </div>
+        `).join('');
+
+      renderStudents();
+      renderRoutes();
+
+      if (map) busMarkers(map, markers);
+      if (map2) busMarkers(map2, markers2);
+
+      document.getElementById('reportStats').innerHTML = `
+        <div><b>${d.students.length}</b><span>Total passengers</span></div>
+        <div><b>${d.students.filter(x => x.status === 'Expected').length}</b><span>Expected</span></div>
+        <div><b>${d.students.filter(x => x.status === 'Boarded').length}</b><span>Boarded</span></div>
+        <div><b>${d.students.filter(x => x.status === 'Not Coming').length}</b><span>Not coming</span></div>
+      `;
+    });
+}
+
+async function remind(id) {
+  await fetch('/api/student/' + id + '/remind', {
+    method: 'POST'
+  });
+
+  load();
+  alert('Approaching-stop notification sent to the passenger.');
+}
+
+map = initMap('map');
+map2 = initMap('map2');
+
+load();
+setInterval(load, 5000);
+
+document.getElementById('addStudentForm').addEventListener(
+  'submit',
+  async e => {
+    e.preventDefault();
+
+    const msg = document.getElementById('addStudentMessage');
+    msg.textContent = 'Saving…';
+
+    const payload = Object.fromEntries(new FormData(e.target).entries());
+
+    try {
+      const r = await fetch('/api/students', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+      });
+
+      const d = await r.json();
+
+      if (!r.ok) {
+        throw new Error(d.error || 'Could not save student');
+      }
+
+      msg.textContent =
+        `Student added successfully. New ID: STU-${String(d.student.id).padStart(3, '0')}`;
+
+      msg.className = 'form-message success';
+      e.target.reset();
+
+      await load();
+    } catch (err) {
+      msg.textContent = err.message;
+      msg.className = 'form-message error';
+    }
+  }
+);
+</script>
+</body>
+</html>
